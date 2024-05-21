@@ -6,27 +6,16 @@
 [node name="lpc" type="Node2D"]
 script = ExtResource("1_1wl57")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-anchor_mode = 0
-
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="Control" type="Control" parent="CanvasLayer"]
-custom_minimum_size = Vector2(200, 0)
 layout_mode = 3
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_left = 8.0
-offset_right = 208.0
-grow_vertical = 2
+anchors_preset = 0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+offset_right = 81.0
+offset_bottom = 122.0
 
 [node name="AnimationLabel" type="Label" parent="CanvasLayer/Control/VBoxContainer"]
 layout_mode = 2
@@ -35,21 +24,12 @@ text = "Animation"
 [node name="AnimationOption" type="OptionButton" parent="CanvasLayer/Control/VBoxContainer"]
 layout_mode = 2
 
-[node name="BodyLabel" type="Label" parent="CanvasLayer/Control/VBoxContainer"]
-layout_mode = 2
-text = "Body"
-
-[node name="BodyOption" type="OptionButton" parent="CanvasLayer/Control/VBoxContainer"]
-layout_mode = 2
-
-[node name="BodyVariant" type="OptionButton" parent="CanvasLayer/Control/VBoxContainer"]
-layout_mode = 2
-
 [node name="GridContainer" type="GridContainer" parent="CanvasLayer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 208.0
+offset_left = 700.0
+offset_right = -80.0
 grow_horizontal = 2
 grow_vertical = 2
 columns = 5
@@ -69,11 +49,10 @@ metadata/_edit_group_ = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
+offset_right = 38.0
 offset_bottom = 23.0
 grow_horizontal = 2
 text = "Sprite parts spear"
 horizontal_alignment = 1
 
 [connection signal="item_selected" from="CanvasLayer/Control/VBoxContainer/AnimationOption" to="." method="_on_animation_option_item_selected"]
-[connection signal="item_selected" from="CanvasLayer/Control/VBoxContainer/BodyOption" to="." method="_on_body_option_item_selected"]
-[connection signal="item_selected" from="CanvasLayer/Control/VBoxContainer/BodyVariant" to="." method="_on_body_variant_item_selected"]

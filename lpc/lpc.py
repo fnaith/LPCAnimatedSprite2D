@@ -69,16 +69,17 @@ def validate_spritesheet(sheet_definitions, show_error):
           if 'zPos' != key and 'is_mask' != key and 'custom_animation' != key:
             key_count[key] = key_count.get(key, 0) + 1
 
+    type_name = sheet_definition['type_name']
     if 0 == layer_count:
-      raise Exception('no layers : %s, %s' % (sheet_definition['name'], sheet_definition['type_name']))
+      raise Exception('no layers : %s, %s' % (sheet_definition['name'], type_name))
 
     key_count_items = list(key_count.items())
     for item in key_count_items:
       if item[0] not in BODY_TYPES:
-        raise Exception('unknown body type : %s, %s, %s' % (sheet_definition['name'], sheet_definition['type_name'], item[0]))
+        raise Exception('unknown body type : %s, %s, %s' % (sheet_definition['name'], type_name, item[0]))
     for item in key_count_items:
       if key_count_items[0][1] != item[1]:
-        raise Exception('missing body type : %s, %s, %s' % (sheet_definition['name'], sheet_definition['type_name'], str(key_count_items)))
+        raise Exception('missing body type : %s, %s, %s' % (sheet_definition['name'], type_name, str(key_count_items)))
 
     variants = sheet_definition['variants']
     layer_dirs = []
@@ -87,7 +88,8 @@ def validate_spritesheet(sheet_definitions, show_error):
       for variant in variants:
         has_variant = None
         for layer_index in range(layer_count):
-          layer_dir = sheet_definition['layer_' + str(layer_index + 1)][body_type]
+          layer_name = 'layer_' + str(layer_index + 1)
+          layer_dir = sheet_definition[layer_name][body_type]
           if layer_dir not in layer_dirs:
             layer_dirs.append(layer_dir)
           spritesheet_path = SPRITESHEET_DIR + '/' + layer_dir + variant + '.png'
@@ -96,7 +98,7 @@ def validate_spritesheet(sheet_definitions, show_error):
           elif has_variant != exists(spritesheet_path):
             valid = False
             if show_error:
-              print('missing spritesheet : %s, %s, %s, %s' % (sheet_definition['name'], sheet_definition['type_name'], body_type, variant))
+              print('missing spritesheet : %s, %s, %s, %s' % (sheet_definition['name'], type_name, body_type, variant))
     for layer_dir in layer_dirs:
       is_missing = True
       for variant in variants:
@@ -106,7 +108,7 @@ def validate_spritesheet(sheet_definitions, show_error):
       if is_missing:
         valid = False
         if show_error:
-          print('missing layer dir : %s, %s, %s' % (sheet_definition['name'], sheet_definition['type_name'], layer_dir))
+          print('missing layer dir : %s, %s, %s' % (sheet_definition['name'], type_name, layer_dir))
 
     if valid:
       valid_sheet_definitions.append(sheet_definition)
@@ -198,25 +200,237 @@ def generate_spritesheet_tres(spritesheet_list):
         with open(tres_path, 'w', encoding='utf-8') as f:
           f.write(lpc_sprite_sheet)
 
-def generate_spritesheet_group(spritesheet_list):
-  spritesheet_list = sorted(spritesheet_list, key=itemgetter(0))
-  for body_type, spritesheet_by_body_type in groupby(spritesheet_list, key=itemgetter(0)):
-    spritesheet_by_body_type = sorted(list(spritesheet_by_body_type), key=itemgetter(1))
-    type_name_to_spritesheets = {}
-    for type_name, spritesheet_by_type_name in groupby(spritesheet_by_body_type, key=itemgetter(1)):
-      spritesheet_by_type_name = sorted(list(spritesheet_by_type_name), key=itemgetter(3))
-      spritesheets = []
-      type_name_to_spritesheets[type_name] = spritesheets
-      for spritesheet in spritesheet_by_type_name:
-        spritesheets.append(spritesheet[3:])
+def generate_spritesheet_json(spritesheet_list):
+  body_to_type_to_name_to_spritesheets = {}
+  for spritesheet in spritesheet_list:
+    body_type = spritesheet[0]
+    type_name = spritesheet[1]
+    name = spritesheet[2]
+    if body_type not in body_to_type_to_name_to_spritesheets:
+      body_to_type_to_name_to_spritesheets[body_type] = {}
+    type_to_name_to_spritesheets = body_to_type_to_name_to_spritesheets[body_type]
+    if type_name not in type_to_name_to_spritesheets:
+      type_to_name_to_spritesheets[type_name] = {}
+    name_to_spritesheets = type_to_name_to_spritesheets[type_name]
+    if name not in name_to_spritesheets:
+      name_to_spritesheets[name] = []
+    spritesheets = name_to_spritesheets[name]
+    spritesheets.append(spritesheet[3:])
 
-    json_path = COPY_DIR + '/spritesheets-' + body_type + '.json'
-    with open(json_path, 'w', encoding='utf-8') as f:
-      options = jsbeautifier.default_options()
-      options.indent_size = 1
-      options.indent_char = '\t'
-      output = jsbeautifier.beautify(dumps(type_name_to_spritesheets, sort_keys=True), options)
-      f.write(output.replace(', ', ','))
+  orders = {
+    # Body
+    'shadow': ['Shadow'],
+    'body': ['Body color', 'Zombie', 'Skeleton'],
+    'wound_arm': ['Arm'],
+    'wound_brain': ['Brain'],
+    'wound_ribs': ['Ribs'],
+    'wound_eye': ['Eye'],
+    'wound_mouth': ['Mouth'],
+    'prosthesis_hand': ['Hook hand'],
+    'prosthesis_leg': ['Peg leg'],
+    'tail': ['Wolf Tail', 'Fluffy Wolf Tail', 'Cat Tail', 'Lizard tail'],
+    'wings': ['Feathered Wings', 'Bat Wings', 'Monarch Wings', 'Pixie Wings', 'Transparent Pixie Wings', 'Lunar Wings', 'Dragonfly Wings', 'Transparent Dragonfly Wings', 'Lizard wings', 'Batlike Lizard Wings'],
+    'wings_edge': ['Monarch Wings Edge'],
+    'wings_dots': ['Monarch Wings Dots'],
+    # Head
+    'head': [
+      'Human female', 'Human male', 'Human female elderly', 'Human male elderly', 'Human male plump', 'Human male gaunt', 'Human child',\
+      'Boarman', 'Boarman child',\
+      'Pig', 'Pig child',\
+      'Sheep', 'Sheep child',\
+      'Minotaur', 'Minotaur female', 'Minotaur child',\
+      'Wartotaur',\
+      'Wolf female', 'Wolf male', 'Wolf child',\
+      'Rabbit', 'Rabbit child',\
+      'Rat', 'Rat child',\
+      'Mouse', 'Mouse child',\
+      'Lizard female', 'Lizard male', 'Lizard child',\
+      'Orc female', 'Orc male', 'Orc child',\
+      'Goblin', 'Goblin child',\
+      'Alien',\
+      'Troll', 'Troll child',\
+      'Skeleton', 'Zombie', 'Jack O Lantern', 'Vampire', 'Frankenstein'],
+    'ears': ['Big ears', 'Elven ears', 'Long ears', 'Medium Elven Ears', 'Hanging Elven Ears', 'Downward Elven Ears', 'Dragon Ears', 'Side Wolf Ears', 'Side Cat Ears', 'Feather Ears'],
+    'ears_inner': ['Side Wolf Ears Skintone', 'Side Cat Ears Skintone', 'Feather Ears Skintone'],
+    'furry_ears': ['Cat Ears', 'Wolf Ears'],
+    'furry_ears_skin': ['Cat Ears Skintone', 'Wolf Ears Skintone'],
+    'nose': ['Big nose', 'Button nose', 'Straight nose', 'Elderly nose', 'Large nose'],
+    'eyes': ['Eyes', 'Cyclops Eyes'],
+    'eyebrows': ['Thick Eyebrows', 'Thin Eyebrows'],
+    'wrinkes': ['Wrinkles'],
+    'beard': ['Basic Beard', 'Winter Beard', '5 O\'clock Shadow', 'Trimmed Beard', 'Medium Beard'],
+    'mustache': ['Big Mustache', 'Mustache', 'French Mustache', 'Walrus Mustache', 'Chevron Mustache', 'Handlebar Mustache', 'Lampshade Mustache', 'Horseshoe Mustache'],
+    'hair': [
+      # Extensions
+      'Left Braid', 'Right Braid', 'Left XLong Bang', 'Right XLong Bang', 'Left XLong Braid', 'Right XLong Braid',\
+      # afro
+      'Afro', 'Natural', 'Dreadlocks short', 'Twists fade', 'Twists straight', 'Dreadlocks long', 'Flat top straight', 'Flat top fade', 'Cornrows',\
+      # curly
+      'Jewfro', 'Curly short', 'Curly short 2', 'Curly long',\
+      # bald/shaved
+      'Balding', 'Longhawk', 'Shorthawk', 'High and tight', 'Buzzcut',\
+      # short
+      'Plain', 'Pixie', 'Page', 'Idol', 'Mop', 'Parted', 'Parted2', 'Part2', 'Messy2', 'Messy3', 'Messy1', 'Bedhead', 'Unkempt', 'Bangsshort', 'Swoop', 'Side Swoop', 'Curtains', 'Page2', 'Bangs', 'Single', 'Cowlick', 'Cowlick tall', 'Tied Back',\
+      # spiky
+      'Spiked porcupine', 'Spiked liberty2', 'Spiked liberty', 'Spiked beehive', 'Spiked', 'Spiked2', 'Halfmessy',\
+      # pigtails
+      'Bunches', 'Pigtails', 'Pigtails bangs',\
+      # bob
+      'Bob', 'Lob', 'Bob side part',\
+      # braids, ponytails, updos
+      'Half up', 'Bangs bun', 'Shortknot', 'Longknot', 'Ponytail', 'Ponytail2', 'High ponytail', 'Braid', 'Braid2', 'Shoulderl', 'Shoulderr', 'Long tied', 'XLong Ponytail',\
+      # long
+      'Loose', 'Bangslong', 'Bangslong2', 'Long', 'Long messy', 'Long messy2', 'Curtains long', 'Wavy', 'Long center part', 'Long straight',\
+      # very long
+      'Princess', 'Sara', 'Long band', 'Xlong',
+      # child
+      'Messed'
+    ],
+    'horns': ['Backwards Horns', 'Curled Horns'],
+    'fins': ['Fin', 'Short fin'],
+    'bandana': ['Bandana', 'Skull Bandana', 'Mail'],
+    'headcover': ['Kerchief', 'Tied headband', 'Thick headband', 'Hair Tie'],
+    'hat': ['Formal', 'Reptile', 'Magic', 'Cloth',\
+      # Helmets
+      'Armet', 'Simple Armet', 'Barbarian', 'Barbarian nasal', 'Barbarian Viking', 'Barbuta', 'Simple barbuta', 'Bascinet', 'Pigface bascinet', 'Pigface bascinet raised', 'Round bascinet', 'Round bascinet raised', 'Close helm', 'Flattop', 'Greathelm', 'Horned helmet', 'Kettle helm', 'Legion', 'Maximus', 'Morion', 'Nasal helm', 'Norman helm', 'Pointed helm', 'Spangenhelm', 'Viking spangenhelm', 'Sugarloaf greathelm', 'Simple sugarloaf helm', 'Xeon helmet',\
+      # Pirate hats'
+      'Bonnie', 'Bonnie feather', 'Cavalier', 'Cavalier feather', 'Tricorne', 'Tricorne stitched', 'Tricorne thatch', 'Tricorne pirate captain', 'Tricorne lieutenant', 'Tricorne captain', 'Bicorne athwart', 'Bicorne athwart pirate', 'Bicorne athwart admiral', 'Bicorne athwart admiral with cockade', 'Bicorne athwart commodore', 'Bicorne foreaft', 'Bicorne foreaft commodore',\
+      # Crowns
+      'Crown', 'Tiara',\
+      # Special'
+      'Santa', 'Elf'
+    ],
+    'hairtie': ['Hair Tie'],
+    'hairextl': ['Left Braid', 'Left XLong Braid', 'Left XLong Bang'],
+    'hairextr': ['Right Braid', 'Right XLong Braid', 'Right XLong Bang'],
+    'visor': ['Grated visor', 'Narrow grated visor', 'Horned visor', 'Pigface visor', 'Pigface visor raised', 'Round visor', 'Round visor raised', 'Slit visor', 'Narrow slit visor'],
+    'accessory': ['Crest', 'Centurion Crest', 'Helmet wings', 'Horns', 'Plumage', 'Centurion Plumage', 'Legion Plumage'],
+    # Accessories
+    'facial_eyes': [
+      # Glasses
+      'Glasses', 'Halfmoon Glasses', 'Nerd Glasses', 'Shades', 'Secretary Glasses', 'Round Glasses', 'Sunglasses',\
+      # Eyepatches
+      'Eyepatch Left', 'Eyepatch Right', 'Eyepatch 2 Left', 'Eyepatch 2 Right', 'Small Eyepatch Left', 'Small Eyepatch Right'
+    ],
+    'facial_left': ['Left Monocle'],
+    'facial_left_trim': ['Left Monacle Frame Color'],
+    'facial_right': ['Right Monocle'],
+    'facial_right_trim': ['Right Monocle Frame Color'],
+    'facial_mask': ['Plain Mask'],
+    'earring_left': ['Simple Earring Left'],
+    'earring_right': ['Simple Earring Right'],
+    'neck': ['Bowtie', 'Bowtie 2', 'Necktie', 'Scarf', 'Capeclip', 'Capetie', 'Jabot', 'Cravat'],
+    'necklace': ['Necklace'],
+    # Arms
+    'shoulders': ['Legion', 'Plate', 'Leather', 'Epaulets', 'Mantal'],
+    'arms': ['Armour'],
+    'bauldron': ['Bauldron'],
+    'bracers': ['Bracers'],
+    'wrists': ['Bracers', 'Cuffs', 'Lace Cuffs'],
+    'gloves': ['Gloves'],
+    # Torso
+    'dress': ['Sash dress', 'Slit dress', 'Bodice', 'Kimono', 'Split Kimono'],
+    'dress_trim': ['Kimono Trim', 'Split Kimono Trim'],
+    'dress_sleeves': ['Kimono Sleeves', 'Kimono Oversized Sleeves'],
+    'dress_sleeves_trim': ['Kimono Sleeves Trim', 'Kimono Oversized Sleeves Trim'],
+    'clothes': [
+      # Longsleeve
+      'Longsleeve', 'Collared/Formal Longsleeve', 'Striped Collared/Formal Longsleeve', 'Longsleeve laced',\
+      'Shortsleeve',
+      # Sleeveless
+      'Sleeveless', 'Sleeveless laced', 'Sleeveless striped',\
+      'Corset', 'Blouse', 'Longsleeve blouse', 'Tunic', 'Sara Tunic', 'Robe', 'Scoop', 'Tanktop',\
+      'Child shirts'
+    ],
+    'apron': ['Overskirt', 'Apron', 'Apron half', 'Apron full'],
+    'overalls': ['Overalls'],
+    'bandages': ['Bandages'],
+    'chainmail': ['Chainmail'],
+    'jacket': ['Collared coat', 'Iverness cloak', 'Trench coat', 'Tabard', 'Frock coat', 'Santa coat', 'Jacket trim'],
+    'jacket_trim': ['Frock coat buttons', 'Frock coat lace', 'Frock coat lapel'],
+    'jacket_collar': ['Frock coat buttons', 'Frock collar'],
+    'jacket_pockets': ['Jacket pockets'],
+    'vest': ['Vest', 'Vest open', 'Bodice', 'Corset'],
+    'armour': ['Plate', 'Leather', 'Legion'],
+    'cape': ['Solid', 'Tattered'],
+    'cape_trim': ['Cape Trim'],
+    'backpack': ['Straps', 'Backpack', 'Square pack', 'Jetpack', 'Jetpack fins', 'Basket'],
+    'cargo': ['Wood', 'Ore', 'Jetpack fins'],
+    'quiver': ['Quiver'],
+    'backpack_straps': ['Straps'],
+    'buckles': ['Buckles'],
+    'belt': ['Leather Belt', 'Double Belt', 'Loose Belt', 'Belly belt', 'Other belts'],
+    'sash': ['Obi', 'Sash', 'Narrow sash', 'Waistband'],
+    'sash_obi': ['Obi Sash'],
+    'sash_tie': ['Obi Knot'],
+    # Legs
+    'legs': [
+      'Armour', 'Pants',\
+      'Wide pants', 'Pregnancy pants', 'Child pants',\
+      'Pantaloons', 'Plain skirt', 'Slit skirt', 'Legion skirt', 'Belle skirt', 'Straight skirt', 'Leggings',\
+      'Child skirts'
+    ],
+    'socks': ['Tabi Socks'],
+    'shoes': [
+      # Boots
+      'Boots', 'Fold Boots', 'Rim Boots', 'Boots Metal Plating',\
+      # Shoes
+      'Armour', 'Slippers', 'Shoes', 'Hoofs', 'Sandals', 'Ghillies',\
+      'Sara'
+    ],
+    'shoes_plate': ['Boots Metal Plating'],
+    # Tools
+    'weapon': [
+      # Tool
+      'Rod', 'Smash', 'Thrust', 'Whip',\
+      # Ranged
+      'Crossbow', 'Slingshot', 'Boomerang', 'Bow', 'Normal', 'Great', 'Recurve',\
+      # Sword
+      'Dagger', 'Glowsword', 'Longsword', 'Rapier', 'Saber', 'Katana', 'Scimitar', 'Longsword alt',\
+      # Blunt'
+      'Flail', 'Mace', 'Waraxe', 'Club',\
+      # Polearm
+      'Cane', 'Spear', 'Scythe', 'Halberd', 'Long spear', 'Dragon spear', 'Trident',\
+      # Magic'
+      'Simple staff', 'Loop staff', 'Diamond staff', 'Gnarled staff', 'S staff', 'Crystal'
+    ],
+    'shield': [
+      'Shield', 'Spartan shield',\
+      # Two-engrailed Shield
+      'Two engrailed shield', 'Two engrailed shield trim', 'Crusader shield', 'Plus shield',
+      # Scutum Shield'
+      'Scutum shield', 'Scutum shield trim',\
+      # Heater Shield
+      'Heater shield wood', 'Heater shield paint', 'Heater shield trim', 'Heater shield pattern'
+    ],
+    'shield_trim': ['Scutum shield trim', 'Heater shield trim'],
+    'shield_paint': ['Heater shield paint'],
+    'shield_pattern': ['Heater shield pattern', 'barry', 'bend_sinister', 'bend', 'bendy_sinister', 'bendy', 'bordure', 'chevron_inverted', 'chevron', 'chief', 'cross', 'fess', 'lozengy', 'pale', 'pall', 'paly', 'per_bend_sinister', 'per_bend', 'per_chevron_inverted', 'per_chevron', 'per_fess', 'per_pale', 'per_saltire', 'quarterly', 'saltire'],
+    'ammo': ['Ammo'],
+    'weapon_magic_crystal': ['Crystal'],
+  }
+  for body_type in BODY_TYPES:
+    type_to_name_to_spritesheets = body_to_type_to_name_to_spritesheets[body_type]
+    for type_name in type_to_name_to_spritesheets:
+      name_to_spritesheets = type_to_name_to_spritesheets[type_name]
+      if type_name in orders:
+        for name in name_to_spritesheets:
+          if name not in orders[type_name]:
+            raise Exception('%s / %s / %s' % (body_type, type_name, name))
+      else:
+        print(type_name, len(name_to_spritesheets))
+        #print(type_name, name_to_spritesheets.keys())
+
+  # for item in body_to_type_to_name_to_spritesheets.items():
+  #   body_type = item[0]
+  #   type_to_name_to_spritesheets = item[1]
+  #   json_path = COPY_DIR + '/spritesheets-' + body_type + '.json'
+  #   with open(json_path, 'w', encoding='utf-8') as f:
+  #     options = jsbeautifier.default_options()
+  #     options.indent_size = 1
+  #     options.indent_char = '\t'
+  #     output = jsbeautifier.beautify(dumps(type_to_name_to_spritesheets), options)
+  #     f.write(output.replace(', ', ','))
 
 
 
@@ -232,4 +446,4 @@ print(len(spritesheet_list))
 #stat_spritesheet_list(spritesheet_list)
 #copy_spritesheet(spritesheet_list)
 #generate_spritesheet_tres(spritesheet_list)
-generate_spritesheet_group(spritesheet_list)
+generate_spritesheet_json(spritesheet_list)
