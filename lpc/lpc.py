@@ -55,7 +55,7 @@ def stat_sheet_definitions(sheet_definitions):
   for entry in type_name_count:
     print(entry[0], entry[1])
 
-def validate_spritesheet(sheet_definitions, show_error):
+def validate_spritesheet(sheet_definitions, show_error, is_missing_spritesheet_error):
   valid_sheet_definitions = []
   for sheet_definition in sheet_definitions:
     valid = True
@@ -96,9 +96,10 @@ def validate_spritesheet(sheet_definitions, show_error):
           if None == has_variant:
             has_variant = exists(spritesheet_path)
           elif has_variant != exists(spritesheet_path):
-            valid = False
-            if show_error:
-              print('missing spritesheet : %s, %s, %s, %s' % (sheet_definition['name'], type_name, body_type, variant))
+            if is_missing_spritesheet_error:
+              valid = False
+              if show_error:
+                print('missing spritesheet : %s, %s, %s, %s' % (sheet_definition['name'], type_name, body_type, variant))
     for layer_dir in layer_dirs:
       is_missing = True
       for variant in variants:
@@ -261,8 +262,6 @@ def generate_spritesheet_json(spritesheet_list):
     'beard': ['Basic Beard', 'Winter Beard', '5 O\'clock Shadow', 'Trimmed Beard', 'Medium Beard'],
     'mustache': ['Big Mustache', 'Mustache', 'French Mustache', 'Walrus Mustache', 'Chevron Mustache', 'Handlebar Mustache', 'Lampshade Mustache', 'Horseshoe Mustache'],
     'hair': [
-      # Extensions
-      'Left Braid', 'Right Braid', 'Left XLong Bang', 'Right XLong Bang', 'Left XLong Braid', 'Right XLong Braid',\
       # afro
       'Afro', 'Natural', 'Dreadlocks short', 'Twists fade', 'Twists straight', 'Dreadlocks long', 'Flat top straight', 'Flat top fade', 'Cornrows',\
       # curly
@@ -289,7 +288,7 @@ def generate_spritesheet_json(spritesheet_list):
     'horns': ['Backwards Horns', 'Curled Horns'],
     'fins': ['Fin', 'Short fin'],
     'bandana': ['Bandana', 'Skull Bandana', 'Mail'],
-    'headcover': ['Kerchief', 'Tied headband', 'Thick headband', 'Hair Tie'],
+    'headcover': ['Kerchief', 'Tied headband', 'Thick headband'],
     'hat': ['Formal', 'Reptile', 'Magic', 'Cloth',\
       # Helmets
       'Armet', 'Simple Armet', 'Barbarian', 'Barbarian nasal', 'Barbarian Viking', 'Barbuta', 'Simple barbuta', 'Bascinet', 'Pigface bascinet', 'Pigface bascinet raised', 'Round bascinet', 'Round bascinet raised', 'Close helm', 'Flattop', 'Greathelm', 'Horned helmet', 'Kettle helm', 'Legion', 'Maximus', 'Morion', 'Nasal helm', 'Norman helm', 'Pointed helm', 'Spangenhelm', 'Viking spangenhelm', 'Sugarloaf greathelm', 'Simple sugarloaf helm', 'Xeon helmet',\
@@ -313,7 +312,7 @@ def generate_spritesheet_json(spritesheet_list):
       'Eyepatch Left', 'Eyepatch Right', 'Eyepatch 2 Left', 'Eyepatch 2 Right', 'Small Eyepatch Left', 'Small Eyepatch Right'
     ],
     'facial_left': ['Left Monocle'],
-    'facial_left_trim': ['Left Monacle Frame Color'],
+    'facial_left_trim': ['Left Monocle Frame Color'],
     'facial_right': ['Right Monocle'],
     'facial_right_trim': ['Right Monocle Frame Color'],
     'facial_mask': ['Plain Mask'],
@@ -326,10 +325,10 @@ def generate_spritesheet_json(spritesheet_list):
     'arms': ['Armour'],
     'bauldron': ['Bauldron'],
     'bracers': ['Bracers'],
-    'wrists': ['Bracers', 'Cuffs', 'Lace Cuffs'],
+    'wrists': ['Cuffs', 'Lace Cuffs'],
     'gloves': ['Gloves'],
     # Torso
-    'dress': ['Sash dress', 'Slit dress', 'Bodice', 'Kimono', 'Split Kimono'],
+    'dress': ['Sash dress', 'Slit dress', 'Kimono', 'Split Kimono'],
     'dress_trim': ['Kimono Trim', 'Split Kimono Trim'],
     'dress_sleeves': ['Kimono Sleeves', 'Kimono Oversized Sleeves'],
     'dress_sleeves_trim': ['Kimono Sleeves Trim', 'Kimono Oversized Sleeves Trim'],
@@ -339,25 +338,25 @@ def generate_spritesheet_json(spritesheet_list):
       'Shortsleeve',
       # Sleeveless
       'Sleeveless', 'Sleeveless laced', 'Sleeveless striped',\
-      'Corset', 'Blouse', 'Longsleeve blouse', 'Tunic', 'Sara Tunic', 'Robe', 'Scoop', 'Tanktop',\
+      'Blouse', 'Longsleeve blouse', 'Tunic', 'Sara Tunic', 'Robe', 'Scoop', 'Tanktop',\
       'Child shirts'
     ],
     'apron': ['Overskirt', 'Apron', 'Apron half', 'Apron full'],
     'overalls': ['Overalls'],
     'bandages': ['Bandages'],
     'chainmail': ['Chainmail'],
-    'jacket': ['Collared coat', 'Iverness cloak', 'Trench coat', 'Tabard', 'Frock coat', 'Santa coat', 'Jacket trim'],
+    'jacket': ['Collared coat', 'Iverness cloak', 'Trench coat', 'Tabard', 'Frock coat', 'Santa coat'],
     'jacket_trim': ['Frock coat buttons', 'Frock coat lace', 'Frock coat lapel'],
-    'jacket_collar': ['Frock coat buttons', 'Frock collar'],
+    'jacket_collar': ['Frock collar'],
     'jacket_pockets': ['Jacket pockets'],
     'vest': ['Vest', 'Vest open', 'Bodice', 'Corset'],
     'armour': ['Plate', 'Leather', 'Legion'],
     'cape': ['Solid', 'Tattered'],
     'cape_trim': ['Cape Trim'],
-    'backpack': ['Straps', 'Backpack', 'Square pack', 'Jetpack', 'Jetpack fins', 'Basket'],
+    'backpack': ['Backpack', 'Square pack', 'Jetpack', 'Basket'],
+    'backpack_straps': ['Straps'],
     'cargo': ['Wood', 'Ore', 'Jetpack fins'],
     'quiver': ['Quiver'],
-    'backpack_straps': ['Straps'],
     'buckles': ['Buckles'],
     'belt': ['Leather Belt', 'Double Belt', 'Loose Belt', 'Belly belt', 'Other belts'],
     'sash': ['Obi', 'Sash', 'Narrow sash', 'Waistband'],
@@ -373,7 +372,7 @@ def generate_spritesheet_json(spritesheet_list):
     'socks': ['Tabi Socks'],
     'shoes': [
       # Boots
-      'Boots', 'Fold Boots', 'Rim Boots', 'Boots Metal Plating',\
+      'Boots', 'Fold Boots', 'Rim Boots',\
       # Shoes
       'Armour', 'Slippers', 'Shoes', 'Hoofs', 'Sandals', 'Ghillies',\
       'Sara'
@@ -384,7 +383,7 @@ def generate_spritesheet_json(spritesheet_list):
       # Tool
       'Rod', 'Smash', 'Thrust', 'Whip',\
       # Ranged
-      'Crossbow', 'Slingshot', 'Boomerang', 'Bow', 'Normal', 'Great', 'Recurve',\
+      'Crossbow', 'Slingshot', 'Boomerang', 'Normal', 'Great', 'Recurve',\
       # Sword
       'Dagger', 'Glowsword', 'Longsword', 'Rapier', 'Saber', 'Katana', 'Scimitar', 'Longsword alt',\
       # Blunt'
@@ -392,16 +391,16 @@ def generate_spritesheet_json(spritesheet_list):
       # Polearm
       'Cane', 'Spear', 'Scythe', 'Halberd', 'Long spear', 'Dragon spear', 'Trident',\
       # Magic'
-      'Simple staff', 'Loop staff', 'Diamond staff', 'Gnarled staff', 'S staff', 'Crystal'
+      'Simple staff', 'Loop staff', 'Diamond staff', 'Gnarled staff', 'S staff'
     ],
     'shield': [
       'Shield', 'Spartan shield',\
       # Two-engrailed Shield
-      'Two engrailed shield', 'Two engrailed shield trim', 'Crusader shield', 'Plus shield',
+      'Two engrailed shield', 'Crusader shield', 'Plus shield',
       # Scutum Shield'
-      'Scutum shield', 'Scutum shield trim',\
+      'Scutum shield',\
       # Heater Shield
-      'Heater shield wood', 'Heater shield paint', 'Heater shield trim', 'Heater shield pattern'
+      'Heater shield wood'
     ],
     'shield_trim': ['Scutum shield trim', 'Heater shield trim'],
     'shield_paint': ['Heater shield paint'],
@@ -418,19 +417,43 @@ def generate_spritesheet_json(spritesheet_list):
           if name not in orders[type_name]:
             raise Exception('%s / %s / %s' % (body_type, type_name, name))
       else:
-        print(type_name, len(name_to_spritesheets))
-        #print(type_name, name_to_spritesheets.keys())
+        raise Exception('%s / %s' % (body_type, type_name))
 
-  # for item in body_to_type_to_name_to_spritesheets.items():
-  #   body_type = item[0]
-  #   type_to_name_to_spritesheets = item[1]
-  #   json_path = COPY_DIR + '/spritesheets-' + body_type + '.json'
-  #   with open(json_path, 'w', encoding='utf-8') as f:
-  #     options = jsbeautifier.default_options()
-  #     options.indent_size = 1
-  #     options.indent_char = '\t'
-  #     output = jsbeautifier.beautify(dumps(type_to_name_to_spritesheets), options)
-  #     f.write(output.replace(', ', ','))
+  order_count = {}
+  for type_name in orders:
+    for name in orders[type_name]:
+      order_name = type_name + '__' + name
+      order_count[order_name] = 0
+  for body_type in BODY_TYPES:
+    type_to_name_to_spritesheets = body_to_type_to_name_to_spritesheets[body_type]
+    for type_name in type_to_name_to_spritesheets:
+      name_to_spritesheets = type_to_name_to_spritesheets[type_name]
+      for name in name_to_spritesheets:
+        order_name = type_name + '__' + name
+        order_count[order_name] = order_count.get(order_name, 0) + 1
+  for item in order_count.items():
+    if 0 == item[1]:
+      raise Exception(item[0])
+
+  for body_type in BODY_TYPES:
+    output = {}
+    type_to_name_to_spritesheets = body_to_type_to_name_to_spritesheets[body_type]
+    for type_name in orders:
+      if type_name not in type_to_name_to_spritesheets:
+        continue
+      output[type_name] = {}
+      name_to_spritesheets = type_to_name_to_spritesheets[type_name]
+      for name in orders[type_name]:
+        if name not in name_to_spritesheets:
+          continue
+        output[type_name][name] = name_to_spritesheets[name]
+    json_path = COPY_DIR + '/spritesheets-' + body_type + '.json'
+    with open(json_path, 'w', encoding='utf-8') as f:
+      options = jsbeautifier.default_options()
+      options.indent_size = 1
+      options.indent_char = '\t'
+      output = jsbeautifier.beautify(dumps(output), options)
+      f.write(output.replace(', ', ','))
 
 
 
@@ -438,7 +461,7 @@ def generate_spritesheet_json(spritesheet_list):
 
 sheet_definitions = load_sheet_definitions()
 #stat_sheet_definitions(sheet_definitions)
-valid_sheet_definitions = validate_spritesheet(sheet_definitions, False)
+valid_sheet_definitions = validate_spritesheet(sheet_definitions, False, False)
 print(len(sheet_definitions))
 print(len(valid_sheet_definitions))
 spritesheet_list = list_spritesheet(valid_sheet_definitions)
